@@ -1,0 +1,9 @@
+{
+  "name": "polonix_api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "uvicorn api.main:app --reload --port 8000",
+    "start": "uvicorn api.main:app --port 8000"
+  }
+}

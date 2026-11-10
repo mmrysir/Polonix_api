@@ -1,0 +1,47 @@
+name: Deploy Polonix API
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            APP_DIR=/opt/polonix_api
+            mkdir -p $APP_DIR
+            cd $APP_DIR
+            if [ ! -d .git ]; then
+              git clone https://github.com/Masterpolonix/Polonix_api.git .
+            else
+              git pull origin main
+            fi
+            python3 -m venv venv || true
+            source venv/bin/activate
+            pip install -r requirements.txt
+            alembic upgrade head
+            sudo systemctl restart polonix-api || true
+            echo "Backend deployment complete"
